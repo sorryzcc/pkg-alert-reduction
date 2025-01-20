@@ -1,5 +1,13 @@
 const ExcelJS = require('exceljs');
 
+// 函数用于清理并转换包含 "M" 的字符串为纯数字
+function parseSize(sizeStr) {
+    if (typeof sizeStr !== 'string') return parseFloat(sizeStr);
+    const cleanedSize = sizeStr.replace(/M/g, '').trim();
+    const sizeValue = parseFloat(cleanedSize);
+    return isNaN(sizeValue) ? null : sizeValue;
+}
+
 async function compareExcelFiles(fileA, fileB) {
     try {
         // 创建工作簿实例并读取文件
@@ -16,37 +24,54 @@ async function compareExcelFiles(fileA, fileB) {
             return;
         }
 
-        // 获取 "基准大小（M）" 和 "责任人" 列的索引
-        let colIndexSizeA, colIndexSizeB, colIndexOwnerA;
+        // 打印所有列名以确认列名是否正确
+        console.log("WorkSheet A Headers:");
         worksheetA.getRow(1).eachCell((cell, colNumber) => {
-            if (cell.text === '基准大小（M）') colIndexSizeA = colNumber;
-            if (cell.text === '责任人') colIndexOwnerA = colNumber;
+            console.log(`Column ${colNumber}: ${cell.text}`);
         });
+        console.log("WorkSheet B Headers:");
         worksheetB.getRow(1).eachCell((cell, colNumber) => {
-            if (cell.text === '基准大小（M）') colIndexSizeB = colNumber;
+            console.log(`Column ${colNumber}: ${cell.text}`);
         });
 
-        if (!colIndexSizeA || !colIndexSizeB || !colIndexOwnerA) {
-            console.log("未找到必要的列");
+        // 直接指定列索引（假设 A 表格中 "基准大小（M）" 在 C 列）
+        const colIndexSizeA = 3; // C 列
+
+        // 对于 B 表格，仍然尝试通过列名查找 "基准大小（M）" 和 "责任人"
+        let colIndexSizeB, colIndexOwnerB;
+        const headerRowB = worksheetB.getRow(1);
+        headerRowB.eachCell((cell, colNumber) => {
+            if (cell.text.trim() === '基准大小（M）') colIndexSizeB = colNumber;
+            if (cell.text.trim() === '责任人') colIndexOwnerB = colNumber;
+        });
+
+        if (!colIndexSizeB || !colIndexOwnerB) {
+            console.error("未在 B 表格中找到必要的列");
             return;
         }
 
-        // 创建一个映射以存储 B 表格中 "基准大小（M）" 的值和对应的行号
-        const sizeMapB = {};
+        // 创建一个映射以存储 B 表格中 "基准大小（M）" 的值和对应的 "责任人"
+        const sizeToOwnerMap = {};
         worksheetB.eachRow({ includeEmpty: true }, (row, rowNumber) => {
             if (rowNumber > 1 && row.getCell(colIndexSizeB).value !== null) {
-                sizeMapB[row.getCell(colIndexSizeB).value] = rowNumber;
+                const sizeValue = parseSize(row.getCell(colIndexSizeB).text);
+                if (sizeValue !== null) {
+                    sizeToOwnerMap[sizeValue] = row.getCell(colIndexOwnerB).text;
+                }
             }
         });
 
         // 比较 A 表格中的 "基准大小（M）" 值与 B 表格中的值
         worksheetA.eachRow({ includeEmpty: true }, (row, rowNumber) => {
             if (rowNumber > 1 && row.getCell(colIndexSizeA).value !== null) {
-                const sizeA = parseFloat(row.getCell(colIndexSizeA).text);
-                const sizeB = parseFloat(worksheetB.getRow(sizeMapB[sizeA] || 2).getCell(colIndexSizeB).text);
-
-                if (sizeA > sizeB) {
-                    console.log(`责任人为：${row.getCell(colIndexOwnerA).text}`);
+                const sizeA = parseSize(row.getCell(colIndexSizeA).text);
+                if (sizeA !== null) {
+                    for (let sizeB in sizeToOwnerMap) {
+                        const parsedSizeB = parseFloat(sizeB);
+                        if (sizeA > parsedSizeB) {
+                            console.log(`责任人为：${sizeToOwnerMap[parsedSizeB]}`);
+                        }
+                    }
                 }
             }
         });
