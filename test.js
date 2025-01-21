@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // 定义文件路径
-const Configurationspath = '/data/landun/workspace/pkg-alert-reduction/Configurations.xlsx';
+const Configurationspath = './Configurations.xlsx';
 
 // 读取 Excel 文件并记录文件名
 function readExcel(filePath, fileName) {
@@ -14,8 +14,8 @@ function readExcel(filePath, fileName) {
 }
 
 // 读取七个 Excel 文件并记录文件名
-const MapData = readExcel(Configurationspath, "Configurationspath");
+const ConfigurationsData = readExcel(Configurationspath, "Configurationspath");
 
 
 
-console.log(MapData);
+console.log(ConfigurationsData);
