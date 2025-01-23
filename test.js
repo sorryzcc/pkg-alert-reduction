@@ -1,12 +1,27 @@
+const XLSX = require('xlsx');
+const fs = require('fs');
+const path = require('path');
 
-const context = "\nBacklog6126\nHow: 活动—精选活动—WCS分地区显示大会页签&活动标题\nWhere: 主界面_活动\nWhat: 2025年WCS分地区赛事的页签&活动标题（Korea WCS Qualifier）\n"
+// 定义文件路径
+const Configurationspath = './Configurations.xlsx';
 
-let state = {}
-// 提取场景信息
-const textSceneInformation1Match = context.match(/^\s*(Backlog|Mcat|JIRA)/);
-state.textSceneInformation1 = textSceneInformation1Match ? textSceneInformation1Match[1] : '';
+// 读取 Excel 文件并记录文件名
+function readExcel(filePath, fileName) {
+    const workbook = XLSX.readFile(filePath);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    return XLSX.utils.sheet_to_json(worksheet).map(item => ({ ...item, "来源": fileName }));
+}
 
-const textSceneInformation2Match = context.match(/(Backlog|Mcat|JIRA)(\d+)(?=\s*How:)/);
-state.textSceneInformation2 = textSceneInformation2Match ? textSceneInformation2Match[2] : '';
+const ConfigurationsData = readExcel(Configurationspath, "Configurationspath");
 
-console.log(state.textSceneInformation1)
+console.log(ConfigurationsData,'ConfigurationsData');
+
+// 直接获取所有责任人的列表，包括重复项
+// const allResponsibles = ConfigurationsData.map(item => item['责任人']).filter(Boolean).join(','); 
+
+
+// console.log(allResponsibles)
+
+// const allResponsibles = []; 
+// setEnv('allResponsibles', `${allResponsibles}`);
