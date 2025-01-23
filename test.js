@@ -5,7 +5,7 @@ const path = require('path');
 // 定义文件路径
 const Configurationspath = './Configurations.xlsx';
 
-// 读取 Excel 文件并记录文件名
+// 读取 Excel 文件
 function readExcel(filePath) {
     const workbook = XLSX.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
