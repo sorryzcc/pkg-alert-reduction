@@ -17,11 +17,3 @@ const ConfigurationsData = readExcel(Configurationspath, "Configurationspath");
 
 console.log(ConfigurationsData,'ConfigurationsData');
 
-// 直接获取所有责任人的列表，包括重复项
-// const allResponsibles = ConfigurationsData.map(item => item['责任人']).filter(Boolean).join(','); 
-
-
-// console.log(allResponsibles)
-
-// const allResponsibles = []; 
-// setEnv('allResponsibles', `${allResponsibles}`);
