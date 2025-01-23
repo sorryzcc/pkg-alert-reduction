@@ -6,11 +6,11 @@ const path = require('path');
 const Configurationspath = './Configurations.xlsx';
 
 // 读取 Excel 文件并记录文件名
-function readExcel(filePath, fileName) {
+function readExcel(filePath) {
     const workbook = XLSX.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    return XLSX.utils.sheet_to_json(worksheet).map(item => ({ ...item, "来源": fileName }));
+    return XLSX.utils.sheet_to_json(worksheet);
 }
 
 const ConfigurationsData = readExcel(Configurationspath, "Configurationspath");
