@@ -105,6 +105,16 @@ function processAndCompare(todayData, configData, threshold) {
     return resultArray;
 }
 
+// 将 comparisonResult 生成为 txt 文件并保存
+function saveComparisonResultAsText(comparisonResult, outputPath) {
+    let content = 'Comparison Result:\n';
+    comparisonResult.forEach((item, index) => {
+        content += `${index + 1}. 分类: ${item.分类}, 责任人: ${item.责任人}, 超出大小: ${item.超出大小}\n`;
+    });
+
+    fs.writeFileSync(outputPath, content, 'utf8');
+}
+
 // 主程序逻辑
 async function main() {
     try {
@@ -118,11 +128,20 @@ async function main() {
         const Configurationspath = './Configurations.xlsx';
         const { data: ConfigurationsData, threshold } = await readExcel(Configurationspath);
 
+        // 新增变量 allResponsibles
+        const allResponsibles = ConfigurationsData.map(item => item['责任人']).filter(Boolean).join(',');
+
         // 处理并比较两个数据集，生成新的结果对象数组
         const comparisonResult = processAndCompare(TodayExcelData, ConfigurationsData, threshold);
 
-        // 输出最终的比较结果
+        // 输出最终的比较结果和所有责任人
         console.log('Comparison Result:', comparisonResult);
+        console.log('All Responsibles:', allResponsibles);
+
+        // 生成并保存 comparisonResult 为 txt 文件
+        const outputFilePath = path.join(__dirname, 'comparison_result.txt');
+        saveComparisonResultAsText(comparisonResult, outputFilePath);
+        console.log(`Comparison result saved to ${outputFilePath}`);
         
         // 可选：将结果写入新的Excel文件或其他形式的输出
         // 这里可以加入您希望的结果保存逻辑

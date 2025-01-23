@@ -1,0 +1,6 @@
+Comparison Result:
+1. 分类: Bundles/HeroBattle((局内英雄), 责任人: v_gypguo, 超出大小: 33.068M
+2. 分类: Bundles/UIPrefab(UI Prefab), 责任人: v_zccgzhang, 超出大小: 8.205M
+3. 分类: Bundles/HeroLobby(大厅英雄), 责任人: v_zccgzhang, 超出大小: 56.497M
+4. 分类: Bundles/PlayerPart, 责任人: v_zccgzhang, 超出大小: 67.495M
+5. 分类: Bundles/AvatarScene, 责任人: v_zccgzhang, 超出大小: 14.079M
