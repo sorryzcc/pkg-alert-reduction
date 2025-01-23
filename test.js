@@ -35,7 +35,7 @@ async function findUniqueXlsxFileByPrefix(dirPath, prefix) {
             throw new Error('No matching XLSX file found.');
         }
     } catch (err) {
-        // console.error(err.message);
+        console.error(err.message);
         throw err; // 抛出异常以便可以在调用处被捕获
     }
 
@@ -47,90 +47,87 @@ function readExcel(filePath) {
     const workbook = XLSX.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    return XLSX.utils.sheet_to_json(worksheet);
+    
+    // 读取数据并转换为 JSON 格式
+    const data = XLSX.utils.sheet_to_json(worksheet);
+
+    // 安全地读取阈值，如果不存在则使用默认值 0
+    const thresholdCell = worksheet['D2'];
+    const threshold = thresholdCell && typeof thresholdCell.v !== 'undefined' ? parseFloat(thresholdCell.v) : 0;
+
+    return {
+        data,
+        threshold
+    };
 }
 
-// 处理 TodayExcelData 数组对象，生成新的映射对象
-function processTodayExcelData(data) {
-    const resultMap = {};
+// 处理 TodayExcelData 和 ConfigurationsData，生成新的结果对象数组
+function processAndCompare(todayData, configData, threshold) {
+    const resultArray = [];
 
-    data.forEach(item => {
-        if (item['基准包名:'] && item['当前包名:']) {
-            // 去掉当前包名中的 "M" 字符（如果存在）
-            let currentPackageName = item['当前包名:'].toString();
-            if (/^\d+(\.\d+)?M$/.test(currentPackageName)) {
-                currentPackageName = parseFloat(currentPackageName.replace('M', ''));
+    // 创建一个映射来快速查找配置文件中的数据
+    const configMap = new Map();
+    configData.forEach(item => {
+        configMap.set(item.分类, item);
+    });
+
+    // 遍历今天的Excel数据
+    todayData.forEach(todayItem => {
+        const basePackageName = todayItem['基准包名:'];
+        const currentSizeStr = todayItem['当前包名:'].replace('M', '');
+        const currentSize = parseFloat(currentSizeStr);
+
+        // 查找配置文件中对应的项
+        const configItem = configMap.get(basePackageName);
+        if (configItem) {
+            // 获取配置文件中的基准大小
+            const baseSizeStr = configItem['基准大小（M）'].replace('M', '');
+            const baseSize = parseFloat(baseSizeStr);
+
+            // 计算是否超过（基准大小 + 阈值）
+            const exceededThreshold = currentSize > (baseSize + threshold);
+
+            // 如果今天的当前大小大于（基准大小 + 阈值）
+            if (exceededThreshold) {
+                // 计算超出大小
+                const exceededSize = currentSize - baseSize;
+
+                // 创建新的对象并添加到结果数组中
+                resultArray.push({
+                    分类: basePackageName,
+                    责任人: configItem.责任人,
+                    超出大小: `${exceededSize.toFixed(3)}M` // 保留三位小数
+                });
             }
-
-            // 将基准包名作为键，处理后的当前包名作为值
-            resultMap[item['基准包名:']] = currentPackageName;
         }
     });
 
-    return resultMap;
+    return resultArray;
 }
 
 // 主程序逻辑
 async function main() {
     try {
-        // 查找并打印今天的Excel文件名
+        // 查找今天的Excel文件
         const TodayExcel = await findUniqueXlsxFileByPrefix(directoryPath, getTodayString());
-        console.log(`Today's Excel file: ${TodayExcel}`); // 输出找到的文件名
-        
-        // 读取配置文件数据
-        const Configurationspath = './Configurations.xlsx';
-        const ConfigurationsData = await readExcel(Configurationspath);
-
-        // 获取阈值，假设它只存在于第一个对象中
-        let thresholdValue = 0;
-        if (ConfigurationsData.length > 0 && ConfigurationsData[0].阈值) {
-            const thresholdValueStr = ConfigurationsData[0].阈值.replace('M', '');
-            thresholdValue = parseFloat(thresholdValueStr);
-            
-            // 检查转换是否成功
-            if (isNaN(thresholdValue)) {
-                throw new Error('Invalid threshold value format.');
-            }
-        }
-
-        // 创建新的数组对象
-        let updatedConfigurationsData = [];
-
-        // 遍历ConfigurationsData数组对象里的每个"分类"的value
-        ConfigurationsData.forEach(item => {
-            if (item.分类 && item['基准大小（M）']) {
-                // 将“基准大小（M）”转换为数值并加上阈值
-                const baseSizeStr = item['基准大小（M）'].replace('M', '');
-                const baseSize = parseFloat(baseSizeStr);
-                
-                // 检查转换是否成功
-                if (isNaN(baseSize)) {
-                    throw new Error('Invalid base size format.');
-                }
-
-                // 更新后的值
-                const updatedValue = baseSize + thresholdValue;
-
-                // 添加到新的数组对象中
-                updatedConfigurationsData.push({
-                    [item.分类]: updatedValue,
-                    '责任人': item.责任人
-                });
-            }
-        });
 
         // 读取今天的Excel文件
-        const TodayExcelData = await readExcel(TodayExcel);
-        // console.log('Data from TodayExcel:', TodayExcelData);
+        const { data: TodayExcelData } = await readExcel(TodayExcel);
 
-        // 处理TodayExcelData数组对象，生成新的映射对象
-        const processedTodayExcelData = processTodayExcelData(TodayExcelData);
-        console.log('Processed TodayExcel Data:', processedTodayExcelData);
+        // 读取配置文件数据和阈值
+        const Configurationspath = './Configurations.xlsx';
+        const { data: ConfigurationsData, threshold } = await readExcel(Configurationspath);
 
-        // 输出更新后的配置数据
-        // console.log('Updated Configurations Data:', updatedConfigurationsData);
+        // 处理并比较两个数据集，生成新的结果对象数组
+        const comparisonResult = processAndCompare(TodayExcelData, ConfigurationsData, threshold);
+
+        // 输出最终的比较结果
+        console.log('Comparison Result:', comparisonResult);
+        
+        // 可选：将结果写入新的Excel文件或其他形式的输出
+        // 这里可以加入您希望的结果保存逻辑
     } catch (err) {
-        // console.error('Error occurred:', err);
+        console.error('Error occurred:', err);
     }
 }
 
