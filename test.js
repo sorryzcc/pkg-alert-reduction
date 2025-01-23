@@ -35,7 +35,7 @@ async function findUniqueXlsxFileByPrefix(dirPath, prefix) {
             throw new Error('No matching XLSX file found.');
         }
     } catch (err) {
-        console.error(err.message);
+        // console.error(err.message);
         throw err; // 抛出异常以便可以在调用处被捕获
     }
 
@@ -62,7 +62,7 @@ function processTodayExcelData(data) {
                 currentPackageName = parseFloat(currentPackageName.replace('M', ''));
             }
 
-            // 将基准包名:作为键，处理后的当前包名:作为值
+            // 将基准包名作为键，处理后的当前包名作为值
             resultMap[item['基准包名:']] = currentPackageName;
         }
     });
@@ -77,6 +77,48 @@ async function main() {
         const TodayExcel = await findUniqueXlsxFileByPrefix(directoryPath, getTodayString());
         console.log(`Today's Excel file: ${TodayExcel}`); // 输出找到的文件名
         
+        // 读取配置文件数据
+        const Configurationspath = './Configurations.xlsx';
+        const ConfigurationsData = await readExcel(Configurationspath);
+
+        // 获取阈值，假设它只存在于第一个对象中
+        let thresholdValue = 0;
+        if (ConfigurationsData.length > 0 && ConfigurationsData[0].阈值) {
+            const thresholdValueStr = ConfigurationsData[0].阈值.replace('M', '');
+            thresholdValue = parseFloat(thresholdValueStr);
+            
+            // 检查转换是否成功
+            if (isNaN(thresholdValue)) {
+                throw new Error('Invalid threshold value format.');
+            }
+        }
+
+        // 创建新的数组对象
+        let updatedConfigurationsData = [];
+
+        // 遍历ConfigurationsData数组对象里的每个"分类"的value
+        ConfigurationsData.forEach(item => {
+            if (item.分类 && item['基准大小（M）']) {
+                // 将“基准大小（M）”转换为数值并加上阈值
+                const baseSizeStr = item['基准大小（M）'].replace('M', '');
+                const baseSize = parseFloat(baseSizeStr);
+                
+                // 检查转换是否成功
+                if (isNaN(baseSize)) {
+                    throw new Error('Invalid base size format.');
+                }
+
+                // 更新后的值
+                const updatedValue = baseSize + thresholdValue;
+
+                // 添加到新的数组对象中
+                updatedConfigurationsData.push({
+                    [item.分类]: updatedValue,
+                    '责任人': item.责任人
+                });
+            }
+        });
+
         // 读取今天的Excel文件
         const TodayExcelData = await readExcel(TodayExcel);
         // console.log('Data from TodayExcel:', TodayExcelData);
@@ -84,8 +126,11 @@ async function main() {
         // 处理TodayExcelData数组对象，生成新的映射对象
         const processedTodayExcelData = processTodayExcelData(TodayExcelData);
         console.log('Processed TodayExcel Data:', processedTodayExcelData);
+
+        // 输出更新后的配置数据
+        // console.log('Updated Configurations Data:', updatedConfigurationsData);
     } catch (err) {
-        console.error('Error occurred:', err);
+        // console.error('Error occurred:', err);
     }
 }
 
