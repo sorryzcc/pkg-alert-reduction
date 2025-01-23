@@ -42,12 +42,6 @@ async function findUniqueXlsxFileByPrefix(dirPath, prefix) {
     return todayExcel; // 返回找到的文件名或空字符串
 }
 
-// 使用函数，提供文件夹路径和今天的日期字符串作为前缀
-const directoryPath = './2025'; // 替换为你的目标文件夹路径
-
-// 定义文件路径
-const Configurationspath = './Configurations.xlsx';
-
 // 读取 Excel 文件
 function readExcel(filePath) {
     const workbook = XLSX.readFile(filePath);
@@ -99,15 +93,24 @@ async function main() {
                 // 添加到新的数组对象中
                 updatedConfigurationsData.push({
                     [item.分类]: updatedValue,
-                    '责任人':item.责任人
+                    '责任人': item.责任人
                 });
             }
-        }); 
-        // 输出更新后的数据
-        // console.log(updatedConfigurationsData); 
+        });
+
+        // 读取今天的Excel文件
+        const TodayExcelData = await readExcel(TodayExcel);
+        console.log('Data from TodayExcel:', TodayExcelData);
+
+        // 输出更新后的配置数据
+        // console.log('Updated Configurations Data:', updatedConfigurationsData);
     } catch (err) {
         console.error('Error occurred:', err);
     }
 }
+
+// 使用函数，提供文件夹路径和今天的日期字符串作为前缀
+const directoryPath = './2025'; // 替换为你的目标文件夹路径
+const Configurationspath = './Configurations.xlsx';
 
 main(); // 调用主函数来执行程序逻辑
