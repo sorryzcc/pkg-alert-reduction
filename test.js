@@ -102,9 +102,9 @@ async function main() {
                     '责任人':item.责任人
                 });
             }
-        });
-
-        console.log(updatedConfigurationsData); // 输出更新后的数据
+        }); 
+        // 输出更新后的数据
+        // console.log(updatedConfigurationsData); 
     } catch (err) {
         console.error('Error occurred:', err);
     }
