@@ -79,7 +79,7 @@ async function main() {
         }
 
         // 创建新的数组对象
-        let updatedData = [];
+        let updatedConfigurationsData = [];
 
         // 遍历ConfigurationsData数组对象里的每个"分类"的value
         ConfigurationsData.forEach(item => {
@@ -97,13 +97,13 @@ async function main() {
                 const updatedValue = baseSize + thresholdValue;
 
                 // 添加到新的数组对象中
-                updatedData.push({
+                updatedConfigurationsData.push({
                     [item.分类]: updatedValue
                 });
             }
         });
 
-        console.log(updatedData); // 输出更新后的数据
+        console.log(updatedConfigurationsData); // 输出更新后的数据
     } catch (err) {
         console.error('Error occurred:', err);
     }
