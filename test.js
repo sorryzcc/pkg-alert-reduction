@@ -98,7 +98,8 @@ async function main() {
 
                 // 添加到新的数组对象中
                 updatedConfigurationsData.push({
-                    [item.分类]: updatedValue
+                    [item.分类]: updatedValue,
+                    '责任人':item.责任人
                 });
             }
         });
