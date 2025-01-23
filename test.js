@@ -59,20 +59,51 @@ function readExcel(filePath) {
 // 主程序逻辑
 async function main() {
     try {
+        // 查找并打印今天的Excel文件名
         const TodayExcel = await findUniqueXlsxFileByPrefix(directoryPath, getTodayString());
         console.log(`Today's Excel file: ${TodayExcel}`); // 输出找到的文件名
         
-        // 继续使用 TodayExcel 变量进行后续操作
-        if (TodayExcel) {
-            const data = readExcel(TodayExcel);
-            // 输出从今天Excel文件读取的数据
-            // console.log(data);
+        // 读取配置文件数据
+        const ConfigurationsData = await readExcel(Configurationspath);
+
+        // 获取阈值，假设它只存在于第一个对象中
+        let thresholdValue = 0;
+        if (ConfigurationsData.length > 0 && ConfigurationsData[0].阈值) {
+            const thresholdValueStr = ConfigurationsData[0].阈值.replace('M', '');
+            thresholdValue = parseFloat(thresholdValueStr);
             
-            // 读取配置文件
-            const ConfigurationsData = readExcel(Configurationspath);
-            // 输出配置文件数据
-            // console.log(ConfigurationsData); 
+            // 检查转换是否成功
+            if (isNaN(thresholdValue)) {
+                throw new Error('Invalid threshold value format.');
+            }
         }
+
+        // 创建新的数组对象
+        let updatedData = [];
+
+        // 遍历ConfigurationsData数组对象里的每个"分类"的value
+        ConfigurationsData.forEach(item => {
+            if (item.分类 && item['基准大小（M）']) {
+                // 将“基准大小（M）”转换为数值并加上阈值
+                const baseSizeStr = item['基准大小（M）'].replace('M', '');
+                const baseSize = parseFloat(baseSizeStr);
+                
+                // 检查转换是否成功
+                if (isNaN(baseSize)) {
+                    throw new Error('Invalid base size format.');
+                }
+
+                // 更新后的值
+                const updatedValue = baseSize + thresholdValue;
+
+                // 添加到新的数组对象中
+                updatedData.push({
+                    [item.分类]: updatedValue
+                });
+            }
+        });
+
+        console.log(updatedData); // 输出更新后的数据
     } catch (err) {
         console.error('Error occurred:', err);
     }
